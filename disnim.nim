@@ -16,12 +16,25 @@ proc exclamPing(s: Shard, m: Message) {.async.} =
     "Pong! took " & $int(after - before) & "ms | " & $s.latency() & "ms."
   )
 
+# wipe all channel messages
+proc slashWipe(m: Message) {.async.} =
+  var messageIDs: seq[string] = @[]
+  let messages = await discord.api.getChannelMessages(m.channel_id)
+  
+  for message in messages:
+    messageIDs.add(message.id)
+
+  # creates illegal access error; attempted to loop 10 iterations and sleep 1 sec but still errors out  
+  await discord.api.bulkDeleteMessages(m.channel_id, messageIDs)
+
 # scan and handle message events
 proc handleMessage(s: Shard, m: Message) {.async.} =
   if m.author.bot: return
 
   if m.content.startsWith("!ping"):
-    await exclamPing(s, m) # call ping command
+    await exclamPing(s, m) # call '!ping' command
+  elif m.content.startsWith("/wipe"):
+    await slashWipe(m) # call '/wipe' command
 
 # // templates & calls
 # when bot is connected to discord & ready
