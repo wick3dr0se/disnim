@@ -3,6 +3,21 @@ import dimscord, asyncdispatch, times, options, strutils, os
 let discord = newDiscordClient(getEnv("BOT_TOKEN"))
 
 # // definitions
+# send bot usage/help embed
+proc exclamHelp(m: Message) {.async.} =
+  discard await discord.api.sendMessage(
+    m.channel_id,
+    embeds = @[Embed(
+      title: some "Commands:",
+      description: some """
+        > `!help` ... display this message
+        > `!ping` ... ping the bot server
+        > `/wipe` ... wipe all channel messages
+      """,
+      color: some 0x7789ec
+    )]
+  )
+ 
 # respond to the client with pong, time & latency
 proc exclamPing(s: Shard, m: Message) {.async.} =
   let
@@ -28,21 +43,25 @@ proc slashWipe(m: Message) {.async.} =
       await discord.api.deleteMessage(m.channel_id, i.id)
       await sleepAsync(750)
 
-# scan and handle message events
-proc handleMessage(s: Shard, m: Message) {.async.} =
+# // templates & calls
+# we use handler procs because the existing template event handlers can't take our custom procs
+# when bot is connected to discord & ready
+proc onBotReady(s: Shard, r: Ready) {.async.} =
+  echo "Ready as " & $r.user
+
+# scan and handle create message events
+proc onCreateMessage(s: Shard, m: Message) {.async.} =
   if m.author.bot: return
 
-  if m.content.startsWith("!ping"):
+  if m.content.startsWith("!help"):
+    await exclamHelp(m) # call '!help' command
+  elif m.content.startsWith("!ping"):
     await exclamPing(s, m) # call '!ping' command
   elif m.content.startsWith("/wipe"):
     await slashWipe(m) # call '/wipe' command
 
-# // templates & calls
-# when bot is connected to discord & ready
-proc onReady(s: Shard, r: Ready) {.event(discord).} =
-  echo "Ready as " & $r.user # write bot username
-
 # re-define procs to existing template names
-discord.events.messageCreate = handleMessage
+discord.events.onReady = onBotReady
+discord.events.messageCreate = onCreateMessage
 
 waitFor discord.startSession()
