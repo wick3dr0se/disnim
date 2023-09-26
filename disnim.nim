@@ -1,6 +1,5 @@
 import dimscord, asyncdispatch, times, options, strutils, os
-
-let discord = newDiscordClient(getEnv("BOT_TOKEN"))
+import ./helpers
 
 # // definitions
 # send bot usage/help embed
@@ -47,7 +46,8 @@ proc slashWipe(m: Message) {.async.} =
 # we use handler procs because the existing template event handlers can't take our custom procs
 # when bot is connected to discord & ready
 proc onBotReady(s: Shard, r: Ready) {.async.} =
-  echo "Ready as " & $r.user
+  echo "Ready as " & $r.user & " in: "
+  getGuilds(r)
 
 # scan and handle create message events
 proc onCreateMessage(s: Shard, m: Message) {.async.} =
