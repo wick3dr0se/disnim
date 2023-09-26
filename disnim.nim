@@ -7,7 +7,7 @@ let discord = newDiscordClient(getEnv("BOT_TOKEN"))
 proc exclamPing(s: Shard, m: Message) {.async.} =
   let
     before = epochTime() * 1000
-    msg = await discord.api.sendMessage(m.channel_id, "ping?")
+    msg = await discord.api.sendMessage(m.channel_id, "Ping?")
     after = epochTime() * 1000
 
   discard await discord.api.editMessage(
@@ -18,14 +18,15 @@ proc exclamPing(s: Shard, m: Message) {.async.} =
 
 # wipe all channel messages
 proc slashWipe(m: Message) {.async.} =
-  var messageIDs: seq[string] = @[]
-  let messages = await discord.api.getChannelMessages(m.channel_id)
-  
-  for message in messages:
-    messageIDs.add(message.id)
+  while true:
+    let messages = await discord.api.getChannelMessages(m.channel_id)
 
-  # creates illegal access error; attempted to loop 10 iterations and sleep 1 sec but still errors out  
-  await discord.api.bulkDeleteMessages(m.channel_id, messageIDs)
+    if messages.len == 0:
+      break
+
+    for i in messages:
+      await discord.api.deleteMessage(m.channel_id, i.id)
+      await sleepAsync(750)
 
 # scan and handle message events
 proc handleMessage(s: Shard, m: Message) {.async.} =
