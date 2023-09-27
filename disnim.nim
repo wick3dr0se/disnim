@@ -54,11 +54,11 @@ proc onCreateMessage(s: Shard, m: Message) {.async.} =
   if m.author.bot: return
 
   if m.content.startsWith("!help"):
-    await exclamHelp(m) # call '!help' command
+    await exclamHelp(m)
   elif m.content.startsWith("!ping"):
-    await exclamPing(s, m) # call '!ping' command
+    await exclamPing(s, m)
   elif m.content.startsWith("/wipe"):
-    await slashWipe(m) # call '/wipe' command
+    await slashWipe(m)
 
 # re-define procs to existing template names
 discord.events.onReady = onBotReady
