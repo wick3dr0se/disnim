@@ -1,5 +1,6 @@
 import dimscord, asyncdispatch, times, options, strutils, os
-import ./helpers
+
+let discord = newDiscordClient(getEnv("BOT_TOKEN"))
 
 # // definitions
 # send bot usage/help embed
@@ -42,14 +43,21 @@ proc slashWipe(m: Message) {.async.} =
       await discord.api.deleteMessage(m.channel_id, i.id)
       await sleepAsync(750)
 
-# // templates & calls
-# we use handler procs because the existing template event handlers can't take our custom procs
+# // custom procs
 # when bot is connected to discord & ready
 proc onBotReady(s: Shard, r: Ready) {.async.} =
   echo "Ready as " & $r.user & " in: "
-  getGuilds(r)
 
-# scan and handle create message events
+  for guildID in r.guilds:
+    let
+      guild = await discord.api.getGuild(guildID.id)
+      member = await discord.api.getGuildMember(guild.id, r.user.id)
+      perms = computePerms(guild, member)
+
+    echo("Guild: (", guild.name, "): '", guild.id, "'")
+    echo("Permissions: ", perms)
+
+# proccess messages when created
 proc onCreateMessage(s: Shard, m: Message) {.async.} =
   if m.author.bot: return
 
@@ -60,8 +68,33 @@ proc onCreateMessage(s: Shard, m: Message) {.async.} =
   elif m.content.startsWith("/wipe"):
     await slashWipe(m)
 
-# re-define procs to existing template names
-discord.events.onReady = onBotReady
-discord.events.messageCreate = onCreateMessage
+# // event templates
+# triggers when guild member joins
+proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
+  let ch = g.system_channel_id.get()
 
-waitFor discord.startSession()
+  discard await discord.api.sendMessage(
+    ch,
+    embeds = @[Embed(
+      title: some "New Member:",
+      description: some "Welcome to " & g.name & ", " & m.user.username & "!",
+      color: some 0x00cc66
+    )]
+  )
+
+  echo("User: ", m.user.username, " joined ", g.name)
+
+
+# re-define our custom procs to existing template names
+discord.events.onReady = onBotReady # triggers when bot is ready
+discord.events.messageCreate = onCreateMessage # triggers when a message is created
+
+waitFor discord.startSession(
+  # pass all our intents
+  gateway_intents = {
+    giGuildMessages,
+    giGuilds,
+    giGuildMembers,
+    giMessageContent
+  }
+)
