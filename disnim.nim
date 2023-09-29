@@ -1,4 +1,4 @@
-import dimscord, asyncdispatch, times, options, strutils, os
+import dimscord, asyncdispatch, times, options, tables, strutils, os
 
 let discord = newDiscordClient(getEnv("BOT_TOKEN"))
 
@@ -48,11 +48,11 @@ proc slashWipe(m: Message) {.async.} =
 proc onBotReady(s: Shard, r: Ready) {.async.} =
   echo "Ready as " & $r.user & " in: "
 
-  for guildID in r.guilds:
+  for g in r.guilds:
     let
-      guild = await discord.api.getGuild(guildID.id)
-      member = await discord.api.getGuildMember(guild.id, r.user.id)
-      perms = computePerms(guild, member)
+      guild = await discord.api.getGuild(g.id)
+      memb = await discord.api.getGuildMember(guild.id, r.user.id)
+      perms = computePerms(guild, memb)
 
     echo("Guild: (", guild.name, "): '", guild.id, "'")
     echo("Permissions: ", perms)
@@ -60,6 +60,17 @@ proc onBotReady(s: Shard, r: Ready) {.async.} =
 # proccess messages when created
 proc onCreateMessage(s: Shard, m: Message) {.async.} =
   if m.author.bot: return
+
+  let
+    guild = s.cache.guilds[m.guild_id.get]
+    ch = s.cache.guildChannels[m.channel_id]
+    memb = await s.getGuildMember(m.guild_id.get, m.author.id)
+    perms = guild.computePerms(memb, ch)
+
+  if permManageMessages notin perms.allowed:
+    echo("Error: permission 'Manage Messagess' not accessible for " & memb.user.username & "!")
+    discard await discord.api.sendMessage(m.channel_id, "Permission not allowed!")
+    return
 
   if m.content.startsWith("!help"):
     await exclamHelp(m)
@@ -92,9 +103,9 @@ discord.events.messageCreate = onCreateMessage # triggers when a message is crea
 waitFor discord.startSession(
   # pass all our intents
   gateway_intents = {
-    giGuildMessages,
     giGuilds,
     giGuildMembers,
+    giGuildMessages,
     giMessageContent
   }
 )
