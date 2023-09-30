@@ -87,7 +87,7 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
   discard await discord.api.sendMessage(
     ch,
     embeds = @[Embed(
-      title: some "New Member:",
+      title: some "Member Joined",
       description: some "Welcome to " & g.name & ", " & m.user.username & "!",
       color: some 0x00cc66
     )]
@@ -95,6 +95,19 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
 
   echo("User: ", m.user.username, " joined ", g.name)
 
+proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
+  let ch = g.system_channel_id.get()
+
+  discard await discord.api.sendMessage(
+    ch,
+    embeds = @[Embed(
+      title: some "Member Left",
+      description: some "Au revoir " & m.user.username & ", may your code be as stable as your loyalty!",
+      color: some 0xff4d4d
+    )]
+  )
+
+  echo("User: ", m.user.username, "left ", g.name)
 
 # re-define our custom procs to existing template names
 discord.events.onReady = onBotReady # triggers when bot is ready
