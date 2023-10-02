@@ -10,34 +10,29 @@ proc interactionHandler*(s: Shard, i: Interaction) {.async.} =
 proc prefixHandler*(s: Shard, m: Message) {.async.} =
   discard await cmd.handleMessage("!", s, m)
 
-proc slashRegistrar*() {.async.} =
-
-  await cmd.registerCommands()
+proc slashRegistrar*() {.async.} = await cmd.registerCommands()
 
 cmd.addChat("help") do ():
-  discard await discord.api.sendMessage(
-    msg.channel_id,
-    embeds = @[
-      Embed(
-        color: some 0x7789ec,
-        fields: some @[
-          EmbedField(
-            name: "Prefix Commands",
-            value: """
-              > `!help` ... display this message
-              > `!ping` ... ping the bot server
-            """
-          ),
-          EmbedField(
-            name: "Slash Commands",
-            value: """
-              > `/sum` ... get the sum of two integers
-              > `/purge` ... delete <N> messages
-            """
-          )
-        ]
-      )
-    ]
+  discard await discord.api.sendMessage(msg.channel_id,
+    embeds = @[Embed(
+      color: some 0x7789ec,
+      fields: some @[
+        EmbedField(
+          name: "Prefix Commands",
+          value: """
+            > `!help`, `!disnim` ... display this message
+            > `!ping` ... ping the bot server
+          """
+        ),
+        EmbedField(
+          name: "Slash Commands",
+          value: """
+            > `/purge` ... delete <N> messages
+            > `/sum` ... get the sum of two integers
+          """
+        )
+      ]
+    )]
   )
 
 cmd.addChat("ping") do ():
@@ -52,9 +47,7 @@ cmd.addChat("ping") do ():
     "Pong! took " & $int(after - before) & "ms | " & $s.latency() & "ms."
   )
 
-cmd.addSlash("sum") do (a: int, b: int):
-  ## Get the sum of two integers
-  await interactionMessage(i.id, i.token, fmt"{a} + {b} = {a + b}")
+cmd.addChatAlias("help", ["disnim"])
 
 cmd.addSlash("purge") do (amount: int = 0):
   ## Delete <N> messages
@@ -79,3 +72,7 @@ cmd.addSlash("purge") do (amount: int = 0):
         b += 1
       else:
         return
+
+cmd.addSlash("sum") do (a: int, b: int):
+  ## Get the sum of two integers
+  await i.id.interactionMessage(i.token, fmt"{a} + {b} = {a + b}")

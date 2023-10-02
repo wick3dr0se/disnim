@@ -11,7 +11,7 @@ proc onReady(s: Shard, r: Ready) {.event(discord).} =
       memb = await discord.api.getGuildMember(guild.id, r.user.id)
       perms = computePerms(guild, memb)
 
-    echo("Guild: ", guild.name, " - ", guild.id)
+    echo("Guild: ", guild.name, "#", guild.id)
     echo("Permissions: ", perms.allowed)
 
     await slashRegistrar()
