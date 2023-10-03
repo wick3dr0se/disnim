@@ -30,6 +30,7 @@ cmd.addChat("help") do ():
         EmbedField(
           name: "Slash Commands",
           value: """
+            > `/ai` ... chat with openai
             > `/purge` ... delete <N> messages
             > `/sum` ... get the sum of two integers
           """
@@ -47,10 +48,24 @@ cmd.addChat("ping") do ():
   discard await discord.api.editMessage(
     msg.channel_id,
     m.id,
-    "Pong! took " & $int(after - before) & "ms | " & $s.latency() & "ms."
+    "Pong! Took " & $int(after - before) & "ms | " & $s.latency() & "ms."
   )
 
 cmd.addChatAlias("help", ["disnim"])
+
+cmd.addSlash("ai") do (text: string):
+  ## Chat with OpenAI
+  await i.deferResponse()
+
+  var response = await ai.chat(text)
+
+  while true:
+    if response.len > 2000:
+      discard await i.followup(response[0..1999])
+      response = response[2000 .. response.len - 1]
+    else:
+      discard await i.followup(response[0 .. response.len - 1])
+      break
 
 cmd.addSlash("purge") do (amount: int = 0):
   ## Delete <N> messages
@@ -79,17 +94,3 @@ cmd.addSlash("purge") do (amount: int = 0):
 cmd.addSlash("sum") do (a: int, b: int):
   ## Get the sum of two integers
   await i.id.interactionMessage(i.token, fmt"{a} + {b} = {a + b}")
-
-cmd.addSlash("ai") do (text: string):
-  ## Chat with OpenAI
-  await i.deferResponse()
-
-  var response = await ai.chat(text)
-
-  while true:
-    if response.len > 2000:
-      discard await i.followup(response[0..1999])
-      response = response[2000 .. response.len - 1]
-    else:
-      discard await i.followup(response[0 .. response.len - 1])
-      break
