@@ -3,6 +3,7 @@ import os, options
 
 let
   token* = getEnv("BOT_TOKEN")
+  aiKey* = getEnv("AI_KEY")
   discord* {.mainClient.} = newDiscordClient(token)
 
 proc interactionMessage*(id: string, token: string, content: string, flags: set[MessageFlags] = {}) {.async.} =

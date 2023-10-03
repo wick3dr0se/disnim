@@ -1,8 +1,11 @@
 import dimscord, dimscmd, asyncdispatch
 import strformat, options, times
+import openai
 import ./helpers
 
-var cmd = discord.newHandler()
+var
+  ai = newAIClient(aiKey)
+  cmd = discord.newHandler()
 
 proc interactionHandler*(s: Shard, i: Interaction) {.async.} =
   discard await cmd.handleInteraction(s, i)
@@ -51,11 +54,11 @@ cmd.addChatAlias("help", ["disnim"])
 
 cmd.addSlash("purge") do (amount: int = 0):
   ## Delete <N> messages
+  await i.deferResponse()
+  
   var
     a: int = amount
     b: int
-
-  await i.deferResponse()
 
   while true:
     let msgs = await discord.api.getChannelMessages(i.channel_id.get())
@@ -76,3 +79,17 @@ cmd.addSlash("purge") do (amount: int = 0):
 cmd.addSlash("sum") do (a: int, b: int):
   ## Get the sum of two integers
   await i.id.interactionMessage(i.token, fmt"{a} + {b} = {a + b}")
+
+cmd.addSlash("ai") do (text: string):
+  ## Chat with OpenAI
+  await i.deferResponse()
+
+  var response = await ai.chat(text)
+
+  while true:
+    if response.len > 2000:
+      discard await i.followup(response[0..1999])
+      response = response[2000 .. response.len - 1]
+    else:
+      discard await i.followup(response[0 .. response.len - 1])
+      break
