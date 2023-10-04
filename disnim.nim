@@ -41,7 +41,7 @@ proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
     )]
   )
 
-  echo("User: ", $m.user, "left ", g.name)
+  echo("User: ", $m.user, " left ", g.name)
 
 proc messageCreate(s: Shard, m: Message) {.event(discord).} =
   if m.author.bot: return

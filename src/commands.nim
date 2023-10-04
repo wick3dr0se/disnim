@@ -31,6 +31,7 @@ cmd.addChat("help") do ():
           name: "Slash Commands",
           value: """
             > `/ai` ... chat with openai
+            > `/image` ... generate images with dall-e
             > `/purge` ... delete <N> messages
             > `/sum` ... get the sum of two integers
           """
@@ -66,6 +67,14 @@ cmd.addSlash("ai") do (text: string):
     else:
       discard await i.followup(response[0 .. response.len - 1])
       break
+
+cmd.addSlash("image") do (prompt: string):
+  ## Generate an image with DALL-E
+  await i.deferResponse()
+  
+  let response = await ai.imageGen(prompt)
+
+  discard await i.followup(response)
 
 cmd.addSlash("purge") do (amount: int = 0):
   ## Delete <N> messages
