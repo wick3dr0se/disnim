@@ -1,9 +1,10 @@
-import dimscord, dimscmd, asyncdispatch
+import dimscord, dimscmd, asyncdispatch, strutils
 import strformat, options, times
-import openai
+import openai, unsplash
 import ./helpers
 
 var
+  unsplashApi = newUnsplashClient(unsplashKey)
   ai = newAIClient(aiKey)
   cmd = discord.newHandler()
 
@@ -54,27 +55,9 @@ cmd.addChat("ping") do ():
 
 cmd.addChatAlias("help", ["disnim"])
 
-cmd.addSlash("ai") do (text: string):
-  ## Chat with OpenAI
-  await i.deferResponse()
-
-  var response = await ai.chat(text)
-
-  while true:
-    if response.len > 2000:
-      discard await i.followup(response[0..1999])
-      response = response[2000 .. response.len - 1]
-    else:
-      discard await i.followup(response[0 .. response.len - 1])
-      break
-
-cmd.addSlash("image") do (prompt: string):
-  ## Generate an image with DALL-E
-  await i.deferResponse()
-  
-  let response = await ai.imageGen(prompt)
-
-  discard await i.followup(response)
+cmd.addSlash("sum") do (a: int, b: int):
+  ## Get the sum of two integers
+  await i.id.interactionMessage(i.token, fmt"{a} + {b} = {a + b}")
 
 cmd.addSlash("purge") do (amount: int = 0):
   ## Delete <N> messages
@@ -100,6 +83,39 @@ cmd.addSlash("purge") do (amount: int = 0):
       else:
         return
 
-cmd.addSlash("sum") do (a: int, b: int):
-  ## Get the sum of two integers
-  await i.id.interactionMessage(i.token, fmt"{a} + {b} = {a + b}")
+cmd.addSlash("unsplash") do (count: int, query: string):
+  ## Retrieve random image(s) via query from Unsplash
+  var links: string
+  
+  await i.deferResponse()
+
+  let
+    queries = split(query, ",")
+    response = await unsplashApi.randomPhoto(queries, count)
+  
+  for r in response:
+    links &= r & " "
+  
+  discard await i.followup(links)
+
+cmd.addSlash("ai") do (text: string):
+  ## Chat with OpenAI
+  await i.deferResponse()
+
+  var response = await ai.chat(text)
+
+  while true:
+    if response.len > 2000:
+      discard await i.followup(response[0..1999])
+      response = response[2000 .. response.len - 1]
+    else:
+      discard await i.followup(response[0 .. response.len - 1])
+      break
+
+cmd.addSlash("image") do (prompt: string):
+  ## Generate an image with DALL-E
+  await i.deferResponse()
+  
+  let response = await ai.imageGen(prompt)
+
+  discard await i.followup(response)
