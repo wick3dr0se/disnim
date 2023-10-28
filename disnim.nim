@@ -1,5 +1,5 @@
 import dimscord, asyncdispatch
-import options
+import options, re
 import ./src/[helpers, commands]
 
 proc onReady(s: Shard, r: Ready) {.event(discord).} =
@@ -45,6 +45,10 @@ proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
 
 proc messageCreate(s: Shard, m: Message) {.event(discord).} =
   if m.author.bot: return
+
+  if m.content.contains(re"(?:https?:\/\/)?(?:\w+\.)?discord(?:(?:app)?\.com\/invite|\.gg)\/([A-Za-z0-9-]+)"):
+    await discord.api.deleteMessage(m.channel_id, m.id, "No Discord links allowed!")
+    discard await discord.api.sendMessage(m.channel_id, "No bueno!")
 
   await prefixHandler(s, m)
 
