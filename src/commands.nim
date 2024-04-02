@@ -94,7 +94,7 @@ cmd.addSlash("unsplash") do (count: int, query: string):
     response = await unsplashApi.randomPhoto(queries, count)
   
   for r in response:
-    links &= r & " "
+    links &= r.link & " "
   
   discard await i.followup(links)
 
@@ -119,3 +119,69 @@ cmd.addSlash("image") do (prompt: string):
   let response = await ai.imageGen(prompt)
 
   discard await i.followup(response)
+
+cmd.addSlash("sub") do (role: string):
+  ## Subscribe to a role
+  let gid = i.guild_id.get()
+  let mid = i.member.get().user.id
+  let roles = i.member.get().roles
+
+  var roleId: string
+  if role.startsWith("<@&") and role.endsWith(">"):
+    roleId = role[3..^2]
+    
+    if roleId in roles:
+      await i.id.interactionMessage(i.token, fmt"{role} role already assigned")
+      return
+    
+    try:
+      await discord.api.addGuildMemberRole(gid, mid, roleId)
+      await i.id.interactionMessage(i.token, fmt"Assigned role {role}")
+    except:
+      await i.id.interactionMessage(i.token, "403: Bad permissions")
+  else:
+    await i.id.interactionMessage(i.token, "Invalid role")
+
+cmd.addSlash("unsub") do (role: string):
+  ## Unsubscribe to a role
+  let gid = i.guild_id.get()
+  let mid = i.member.get().user.id
+  let roles = i.member.get().roles
+
+  var roleId: string
+  if role.startsWith("<@&") and role.endsWith(">"):
+    roleId = role[3..^2]
+
+    if roleId notin roles:
+      await i.id.interactionMessage(i.token, fmt"{role} role is not assigned")
+      return
+
+    await discord.api.removeGuildMemberRole(gid, mid, roleId)
+    await i.id.interactionMessage(i.token, fmt"Unassigned role {role}")
+  else:
+    await i.id.interactionMessage(i.token, "Invalid role")
+
+cmd.addSlash("subs") do (role: string):
+  ## Get the amount of subscribers to a role
+  await i.deferResponse()
+
+  let gid = i.guild_id.get()
+  
+  var roleId: string
+  if role.startsWith("<@&") and role.endsWith(">"):
+    roleId = role[3..^2]
+  else:
+    await i.id.interactionMessage(i.token, "Invalid role")
+    return
+
+  let mems = await discord.api.getGuildMembers(gid, 1000)
+
+  var subCnt = 0
+
+  for mem in mems:
+    let roles = mem.roles
+
+    if roleId in roles:
+      inc subCnt
+
+  discard await i.followup(fmt"{subCnt} users subscribed to {role}")
