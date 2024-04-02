@@ -32,6 +32,8 @@ proc guildMemberAdd(s: Shard, g: Guild, m: Member) {.event(discord).} =
   echo("User: ", $m.user, " joined ", g.name)
 
 proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
+  echo("User: ", $m.user, " left ", g.name)
+  #[
   discard await discord.api.sendMessage(
     g.system_channel_id.get(),
     embeds = @[Embed(
@@ -40,15 +42,13 @@ proc guildMemberRemove(s: Shard, g: Guild, m: Member) {.event(discord).} =
       color: some 0xff4d4d
     )]
   )
-
-  echo("User: ", $m.user, " left ", g.name)
+  ]#
 
 proc messageCreate(s: Shard, m: Message) {.event(discord).} =
   if m.author.bot: return
 
   if m.content.contains(re"(?:https?:\/\/)?(?:\w+\.)?discord(?:(?:app)?\.com\/invite|\.gg)\/([A-Za-z0-9-]+)"):
     await discord.api.deleteMessage(m.channel_id, m.id, "No Discord links allowed!")
-    discard await discord.api.sendMessage(m.channel_id, "No bueno!")
 
   await prefixHandler(s, m)
 
